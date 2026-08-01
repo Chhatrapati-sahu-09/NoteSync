@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import {
   Video,
-  FileText,
   Plus,
   Tag,
-  Star,
-  Clock,
   ChevronLeft,
   ChevronRight,
   Upload,
   Layers,
-  Sparkles,
+  X,
 } from 'lucide-react';
 import { useNoteSyncStore } from '../store/useNoteSyncStore';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [videoUrlInput, setVideoUrlInput] = useState('');
   const [videoTitleInput, setVideoTitleInput] = useState('');
@@ -46,6 +48,7 @@ export const Sidebar: React.FC = () => {
     setVideoUrlInput('');
     setVideoTitleInput('');
     setShowUploadModal(false);
+    if (onCloseMobile) onCloseMobile();
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,33 +62,13 @@ export const Sidebar: React.FC = () => {
         thumbnail: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?q=80&w=800&auto=format&fit=crop',
       });
       setShowUploadModal(false);
+      if (onCloseMobile) onCloseMobile();
     }
   };
 
-  if (collapsed) {
-    return (
-      <aside className="w-14 border-r border-zinc-200 dark:border-zinc-800 bg-[#f7f7f5] dark:bg-zinc-900 flex flex-col items-center py-4 space-y-6 transition-all z-20">
-        <button
-          onClick={() => setCollapsed(false)}
-          className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-          title="Expand Sidebar"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setShowUploadModal(true)}
-          className="p-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity"
-          title="Add Video"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </aside>
-    );
-  }
-
-  return (
-    <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-[#f7f7f5] dark:bg-zinc-900/80 flex flex-col justify-between p-3 select-none transition-all z-20 font-sans">
-      <div className="space-y-6">
+  const sidebarContent = (
+    <div className="h-full flex flex-col justify-between p-3 select-none font-sans">
+      <div className="space-y-5">
         {/* Top Header */}
         <div className="flex items-center justify-between px-2 pt-1">
           <div className="flex items-center space-x-2">
@@ -94,13 +77,23 @@ export const Sidebar: React.FC = () => {
               Workspace
             </span>
           </div>
-          <button
-            onClick={() => setCollapsed(true)}
-            className="p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition-all"
-            title="Collapse Sidebar"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+          <div className="flex items-center space-x-1">
+            {onCloseMobile && (
+              <button
+                onClick={onCloseMobile}
+                className="md:hidden p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => setCollapsed(true)}
+              className="hidden md:block p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition-all"
+              title="Collapse Sidebar"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Video List */}
@@ -116,14 +109,17 @@ export const Sidebar: React.FC = () => {
             </button>
           </div>
 
-          <div className="space-y-0.5 max-h-48 overflow-y-auto pr-1">
+          <div className="space-y-0.5 max-h-52 overflow-y-auto pr-1">
             {videos.map((vid) => {
               const vidNotesCount = notes.filter((n) => n.videoId === vid.id).length;
               const isActive = vid.id === activeVideoId;
               return (
                 <button
                   key={vid.id}
-                  onClick={() => setActiveVideo(vid.id)}
+                  onClick={() => {
+                    setActiveVideo(vid.id);
+                    if (onCloseMobile) onCloseMobile();
+                  }}
                   className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between group transition-all ${
                     isActive
                       ? 'bg-zinc-200/70 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
@@ -158,7 +154,10 @@ export const Sidebar: React.FC = () => {
             {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  if (onCloseMobile) onCloseMobile();
+                }}
                 className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all flex items-center justify-between ${
                   selectedCategory === cat
                     ? 'bg-zinc-200/80 dark:bg-zinc-800 font-semibold text-zinc-900 dark:text-zinc-100'
@@ -175,7 +174,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Notion Footer & Upload Modal Launcher */}
+      {/* Notion Footer & Upload Launcher */}
       <div className="space-y-2 pt-4 border-t border-zinc-200/60 dark:border-zinc-800">
         <button
           onClick={() => setShowUploadModal(true)}
@@ -196,7 +195,7 @@ export const Sidebar: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center space-x-2">
                 <Video className="w-4 h-4 text-indigo-500" />
-                <span>Add New Video to Workspace</span>
+                <span>Add Video to Workspace</span>
               </h3>
               <button
                 onClick={() => setShowUploadModal(false)}
@@ -215,34 +214,28 @@ export const Sidebar: React.FC = () => {
                   type="text"
                   value={videoTitleInput}
                   onChange={(e) => setVideoTitleInput(e.target.value)}
-                  placeholder="e.g. System Design Interview Course"
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  placeholder="e.g. System Design Masterclass"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Video URL (Direct MP4 or Sample)
+                  Video URL (Direct MP4)
                 </label>
                 <input
                   type="url"
                   value={videoUrlInput}
                   onChange={(e) => setVideoUrlInput(e.target.value)}
                   placeholder="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none"
                 />
               </div>
 
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
-                <span className="flex-shrink mx-2 text-[10px] text-zinc-400 uppercase">Or Local File</span>
-                <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
-              </div>
-
               <div>
-                <label className="flex items-center justify-center space-x-2 py-2.5 px-4 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-all">
+                <label className="flex items-center justify-center space-x-2 py-2 px-4 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all">
                   <Upload className="w-4 h-4 text-zinc-400" />
-                  <span>Select Local Video File (.mp4, .webm)</span>
+                  <span>Select Local Video File</span>
                   <input
                     type="file"
                     accept="video/*"
@@ -271,6 +264,47 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
       )}
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      {collapsed ? (
+        <aside className="hidden md:flex w-14 border-r border-zinc-200 dark:border-zinc-800 bg-[#f7f7f5] dark:bg-zinc-900/90 flex-col items-center py-4 space-y-6 transition-all z-20">
+          <button
+            onClick={() => setCollapsed(false)}
+            className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+            title="Expand Sidebar"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className="p-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity"
+            title="Add Video"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </aside>
+      ) : (
+        <aside className="hidden md:block w-64 border-r border-zinc-200 dark:border-zinc-800 bg-[#f7f7f5] dark:bg-zinc-900/90 transition-all z-20">
+          {sidebarContent}
+        </aside>
+      )}
+
+      {/* Mobile Drawer Sidebar */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            onClick={onCloseMobile}
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs"
+          />
+          <aside className="relative w-72 bg-[#f7f7f5] dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 z-50">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
