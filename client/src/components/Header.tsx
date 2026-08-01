@@ -9,14 +9,16 @@ import {
   Video,
   Menu,
   Command,
+  Camera,
 } from 'lucide-react';
 import { useNoteSyncStore } from '../store/useNoteSyncStore';
 
 interface HeaderProps {
   onToggleMobileSidebar?: () => void;
+  onOpenScreenshotGallery?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
+export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar, onOpenScreenshotGallery }) => {
   const {
     theme,
     toggleTheme,
@@ -84,6 +86,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar }) => {
 
       {/* Right: Quick Action Controls */}
       <div className="flex items-center space-x-1.5 sm:space-x-2">
+        {/* Frame Screenshots Gallery */}
+        {onOpenScreenshotGallery && (
+          <button
+            onClick={onOpenScreenshotGallery}
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 transition-all border border-amber-200/60 dark:border-amber-800/60"
+            title="View Frame Screenshot Bookmarks"
+          >
+            <Camera className="w-3.5 h-3.5 text-amber-500" />
+            <span className="hidden lg:inline">Screenshots</span>
+          </button>
+        )}
         {/* Sticky Notes Sidebar */}
         <button
           onClick={toggleStickyNotes}

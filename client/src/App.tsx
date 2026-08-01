@@ -7,11 +7,13 @@ import { NoteList } from './components/NoteList';
 import { StickyNotesDrawer } from './components/StickyNotesDrawer';
 import { AIModal } from './components/AIModal';
 import { ExportModal } from './components/ExportModal';
+import { ScreenshotGalleryModal } from './components/ScreenshotGalleryModal';
 import type { Note, Screenshot } from './types';
 import { useNoteSyncStore } from './store/useNoteSyncStore';
 
 export function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [screenshotGalleryOpen, setScreenshotGalleryOpen] = useState(false);
   const [seekTime, setSeekTime] = useState<number | null>(null);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [attachedScreenshot, setAttachedScreenshot] = useState<Screenshot | null>(null);
@@ -39,7 +41,10 @@ export function App() {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors">
       {/* Notion Top Navigation Bar */}
-      <Header onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+      <Header
+        onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        onOpenScreenshotGallery={() => setScreenshotGalleryOpen(true)}
+      />
 
       {/* Main Responsive Workspace Layout */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -112,6 +117,13 @@ export function App() {
 
       {/* Export Notes Modal */}
       <ExportModal />
+
+      {/* Frame Screenshot Bookmarks Gallery Modal */}
+      <ScreenshotGalleryModal
+        isOpen={screenshotGalleryOpen}
+        onClose={() => setScreenshotGalleryOpen(false)}
+        onJumpToTimestamp={handleJumpToTimestamp}
+      />
     </div>
   );
 }
