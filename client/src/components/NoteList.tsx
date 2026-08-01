@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Clock,
   Star,
@@ -9,6 +9,7 @@ import {
   ExternalLink,
   Sparkles,
   FileText,
+  Filter,
 } from 'lucide-react';
 import { useNoteSyncStore } from '../store/useNoteSyncStore';
 import type { Note } from '../types';
@@ -28,6 +29,8 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
     toggleFavoriteNote,
   } = useNoteSyncStore();
 
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+
   if (!activeVideo) {
     return (
       <div className="p-8 text-center text-zinc-400 text-xs font-sans">
@@ -38,6 +41,11 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
 
   // Filter notes belonging to active video
   let videoNotes = notes.filter((n) => n.videoId === activeVideo.id);
+
+  // Favorites filter
+  if (showOnlyFavorites) {
+    videoNotes = videoNotes.filter((n) => n.isFavorite);
+  }
 
   // Category filter
   if (selectedCategory !== 'All') {
@@ -75,26 +83,44 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
 
   return (
     <div className="space-y-3 font-sans">
+      {/* Top Header Row with Favorites Filter */}
       <div className="flex items-center justify-between px-1">
         <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center space-x-1.5">
           <FileText className="w-3.5 h-3.5" />
           <span>Notes & Highlights ({videoNotes.length})</span>
         </h2>
-        {selectedCategory !== 'All' && (
-          <span className="text-[10px] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-medium">
-            Filter: {selectedCategory}
-          </span>
-        )}
+
+        <div className="flex items-center space-x-2">
+          {/* Favorites Filter Toggle */}
+          <button
+            onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+            className={`flex items-center space-x-1 text-[11px] px-2 py-0.5 rounded-full border transition-all ${
+              showOnlyFavorites
+                ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800 font-semibold'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200'
+            }`}
+            title="Filter Favorites Only"
+          >
+            <Star className={`w-3 h-3 ${showOnlyFavorites ? 'text-amber-500 fill-amber-500' : ''}`} />
+            <span>Starred</span>
+          </button>
+
+          {selectedCategory !== 'All' && (
+            <span className="text-[10px] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-medium">
+              {selectedCategory}
+            </span>
+          )}
+        </div>
       </div>
 
       {videoNotes.length === 0 ? (
         <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center space-y-2 bg-zinc-50/50 dark:bg-zinc-900/40">
           <Sparkles className="w-6 h-6 text-zinc-400 mx-auto" />
           <p className="text-xs text-zinc-500 font-medium">
-            No notes found for this filter.
+            No notes found matching current filters.
           </p>
           <p className="text-[11px] text-zinc-400">
-            Press <kbd className="font-mono bg-zinc-200 dark:bg-zinc-800 px-1 py-0.5 rounded">N</kbd> on your keyboard or type above to add a timestamped note.
+            Press <kbd className="font-mono bg-zinc-200 dark:bg-zinc-800 px-1 py-0.5 rounded">N</kbd> or write above to create a timestamped note.
           </p>
         </div>
       ) : (
@@ -106,7 +132,7 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
                 note.color
               )}`}
             >
-              {/* Header Row: Timestamp Badge & Actions */}
+              {/* Header Row: Timestamp Badge & CRUD Actions */}
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => onJumpToTimestamp(note.timestamp)}
@@ -124,7 +150,7 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
                     {note.category}
                   </span>
 
-                  {/* Favorite Star */}
+                  {/* Favorite Star Button */}
                   <button
                     onClick={() => toggleFavoriteNote(note.id)}
                     className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-amber-500 transition-colors"
@@ -137,7 +163,7 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
                     />
                   </button>
 
-                  {/* Edit */}
+                  {/* Edit Button */}
                   <button
                     onClick={() => onEditNote(note)}
                     className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
@@ -146,7 +172,7 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
 
-                  {/* Delete */}
+                  {/* Delete Button */}
                   <button
                     onClick={() => deleteNote(note.id)}
                     className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-red-500 transition-colors"
@@ -167,7 +193,7 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
                 </div>
               </div>
 
-              {/* Attached Screenshot Image Preview */}
+              {/* Attached Screenshot Thumbnail */}
               {note.screenshot && (
                 <div
                   onClick={() => onJumpToTimestamp(note.screenshot!.timestamp)}
