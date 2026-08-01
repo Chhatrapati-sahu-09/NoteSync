@@ -1,12 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Clock,
   Tag,
   Palette,
-  Sparkles,
-  Check,
-  Trash2,
-  Image as ImageIcon,
   Bold,
   Italic,
   Code,
@@ -14,6 +10,7 @@ import {
   Quote,
   Heading2,
   PlusCircle,
+  Trash2,
 } from 'lucide-react';
 import { useNoteSyncStore } from '../store/useNoteSyncStore';
 import type { Note, Screenshot } from '../types';
@@ -31,7 +28,9 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   attachedScreenshot,
   onClearAttachedScreenshot,
 }) => {
-  const { activeVideo, addNote, updateNote, deleteNote } = useNoteSyncStore();
+  const { activeVideo, addNote, updateNote } = useNoteSyncStore();
+
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -49,7 +48,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
     { name: 'orange', bg: 'bg-orange-100 dark:bg-orange-950/60 border-orange-300 dark:border-orange-800' },
   ];
 
-  // Populate when editing existing note or when attached screenshot is received
+  // Auto focus input when editing existing note or when attached screenshot is received
   useEffect(() => {
     if (editingNote) {
       setTitle(editingNote.title);
@@ -57,6 +56,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
       setCategory(editingNote.category);
       setColor(editingNote.color || 'yellow');
       setTimestamp(editingNote.timestamp);
+      titleInputRef.current?.focus();
     } else {
       if (activeVideo) {
         setTimestamp(activeVideo.currentTime);
@@ -68,13 +68,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   useEffect(() => {
     if (attachedScreenshot && !editingNote) {
       setTimestamp(attachedScreenshot.timestamp);
+      titleInputRef.current?.focus();
     }
   }, [attachedScreenshot]);
 
-  // Keyboard shortcut listener for 'N' to spawn a new note
+  // Keyboard shortcut listener for 'N' to spawn a new note & auto focus
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input field
       const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
 
@@ -84,6 +84,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           setTimestamp(activeVideo.currentTime);
           setTitle(`Note at ${formatTime(activeVideo.currentTime)}`);
           setContent('');
+          setTimeout(() => titleInputRef.current?.focus(), 50);
         }
       }
     };
@@ -125,7 +126,6 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         screenshot: attachedScreenshot || undefined,
       });
 
-      // Clear form
       setTitle('');
       setContent('');
       if (onClearAttachedScreenshot) onClearAttachedScreenshot();
@@ -139,7 +139,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   const activeColorObj = colors.find((c) => c.name === color) || colors[0];
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm transition-all ${activeColorObj.bg}`}>
+    <div className={`rounded-2xl border p-4 shadow-xs transition-all ${activeColorObj.bg}`}>
       <form onSubmit={handleSave} className="space-y-3">
         {/* Top Header: Timestamp Badge & Color Selector */}
         <div className="flex items-center justify-between pb-1 border-b border-black/5 dark:border-white/5">
@@ -149,7 +149,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
               <span>{formatTime(timestamp)}</span>
             </span>
             <span className="text-[11px] text-zinc-500 font-medium hidden sm:inline">
-              (Press <kbd className="font-mono bg-black/5 px-1 py-0.5 rounded">N</kbd> anytime to capture timestamp)
+              (Press <kbd className="font-mono bg-black/5 px-1 py-0.5 rounded">N</kbd> for instant timestamp note)
             </span>
           </div>
 
@@ -180,9 +180,10 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           </div>
         </div>
 
-        {/* Note Title Input */}
+        {/* Note Title Input with auto focus */}
         <div>
           <input
+            ref={titleInputRef}
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -280,7 +281,6 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
 
         {/* Category Pills & Action Buttons Row */}
         <div className="flex items-center justify-between pt-2 border-t border-black/5 dark:border-white/5">
-          {/* Category Selector */}
           <div className="flex items-center space-x-1 overflow-x-auto">
             <Tag className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0 mr-1" />
             {categories.map((cat) => (
@@ -299,7 +299,6 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
             ))}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center space-x-2">
             {editingNote && onCancelEdit && (
               <button
