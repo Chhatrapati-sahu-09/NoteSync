@@ -1,85 +1,123 @@
-# NoteSync - Personal Video Note-Taking & AI Workspace
+# 🚀 NoteSync - Notion-Inspired Video Note-Taking & AI Workspace
 
-> 📌 **Notice**: This project is built for **personal use** to streamline video-based learning, timestamped markdown note-taking, and automated study flashcard creation.
-
----
-
-## 🚀 Project Overview
-
-**NoteSync** is a Notion-inspired productivity platform that integrates a custom HTML5 video player with timestamped note-taking, video frame canvas screenshot capture, AI summaries, flashcard generation, and multi-format document exporting (PDF, Markdown, TXT).
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend (`client/`)
-- **Framework**: React 19 + Vite + TypeScript
-- **Styling**: Tailwind CSS v4 + Notion Minimalist CSS System + Google Font Inter
-- **State Management**: Zustand with `localStorage` persistence
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
-- **PDF Export**: jsPDF
-
-### Backend (`server/` - Upcoming)
-- **Runtime**: Node.js + Express
-- **Database**: MongoDB + Mongoose ORM
-- **Authentication**: JWT (JSON Web Tokens)
-- **File Uploads**: Multer (screenshot & asset hosting)
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-v4.0-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Status-Personal_Project-emerald?style=for-the-badge" alt="Personal Project" />
+</p>
 
 ---
 
-## ✅ Current Progress (Day 1 Complete)
+## 📌 Personal Use Statement
 
-All **7 initial frontend milestones** have been completed, verified with TypeScript compilation checks, and pushed to GitHub:
-
-1. **`feat: initialize Vite + React + Tailwind + shadcn`**
-   - Project directory architecture (`client/`, `server/`, `docs/`).
-   - Notion design tokens, sticky note color system, persistent dark/light theme toggle.
-2. **`feat: build Notion-inspired application shell`**
-   - Responsive top header bar with quick search (`Cmd/Ctrl + K`), active video breadcrumb, and collapsible mobile sidebar drawer.
-3. **`feat: implement custom HTML5 video player`**
-   - Custom timeline seek bar, play/pause, volume slider, playback speeds (`0.5x` to `2x`), skip controls, and fullscreen.
-4. **`feat: create timestamp note panel`**
-   - Press <kbd>N</kbd> keyboard shortcut to capture the active video timestamp and focus the title editor instantly.
-   - Rich text formatting toolbar (bold, italic, headers, code blocks, task lists, quote callouts).
-5. **`feat: enable note editing, deletion and favorites`**
-   - Full note CRUD operations, favorite starring filter toggle, category pill filters (Key Takeaway, Code Snippet, Summary, Question), and live search.
-6. **`feat: add screenshot bookmarks and timeline navigation`**
-   - Canvas-based **Capture Frame** tool for snapshotting exact video frames into visual note attachments.
-   - Frame Screenshot Bookmarks Gallery modal with click-to-jump timeline seeking.
-7. **`feat: polish UI with animations and responsive design`**
-   - Framer Motion `AnimatePresence` animations for note cards and modal overlays.
+> **NoteSync** is a custom-built, personal note-taking application designed to transform how video lectures, masterclasses, and coding tutorials are consumed. It combines precise video timeline tracking, video frame screenshot capture, markdown note-taking, and AI flashcards into one seamless, Notion-inspired desktop workspace.
 
 ---
 
-## 🔮 Upcoming Progress & Roadmap
+## 🌟 Key Features
 
-- [ ] **Node.js & Express API Server**: Setup RESTful API routes in `server/`.
-- [ ] **MongoDB & Mongoose Schema**: Store users, video notes, categories, and screenshot metadata persistently in MongoDB Atlas.
-- [ ] **JWT Authentication**: User registration, login, and protected route middleware.
-- [ ] **Multer File Storage**: Server-side video snapshot & upload image hosting.
-- [ ] **Live Multi-Device Cloud Sync**: Real-time sync simulation across web, desktop, and mobile clients.
+### 🎬 Custom HTML5 Video Player
+- **Precise Timeline Control**: Smooth seek bar with live `mm:ss` timestamp formatting.
+- **Playback Speed Selector**: Adjust speed on the fly (`0.5x`, `1.0x`, `1.25x`, `1.5x`, `2.0x`).
+- **Skip & Volume Controls**: 10-second rewind/forward skip, volume slider, mute toggle, and fullscreen mode.
+- **Capture Frame Screenshot Tool**: Take high-resolution video frame snapshots directly from HTML5 Canvas and attach them as visual note bookmarks.
+
+### 📝 Timestamped Rich Markdown Notes
+- **Instant <kbd>N</kbd> Shortcut**: Press `N` anywhere to automatically freeze the video timestamp, spawn a new note, and focus the editor.
+- **Click-to-Jump Timestamp Navigation**: Click any timestamp badge or screenshot thumbnail in your note cards to jump the video directly to that exact moment.
+- **Rich Text Toolbar**: Insert bold, italic, headers, code blocks, task list checkboxes, callout quotes, and custom sticky note colors (Amber, Sky, Emerald, Pink, Purple, Orange).
+
+### 🎨 Notion-Inspired Aesthetic
+- **Minimalist Clean UI**: Generous whitespace, rounded card layouts, and Google Font Inter typography.
+- **Sticky Notes Drawer**: Slide-over quick sticky notes drawer for capturing fleeting ideas.
+- **Dark & Light Mode**: Toggle persistent dark/light themes seamlessly.
+
+### 🤖 AI Intelligence & Flashcards Deck
+- **Executive Summaries**: Generate automated video summaries and key action item lists.
+- **Interactive Flashcards**: Auto-generate interactive flashcard review decks with flip animations.
+- **Concept Explainer**: Simple plain-English breakdowns for complex technical code snippets.
+
+### 📤 Multi-Format Exporting
+- **Markdown (`.md`)**: Export notes formatted for Obsidian, Notion, or GitHub.
+- **PDF (`.pdf`)**: Generate print-ready PDF documents using `jsPDF`.
+- **Plain Text (`.txt`)**: Lightweight plaintext summaries.
 
 ---
 
-## 🏃 Quick Start (Frontend)
+## 📂 Project Architecture
+
+```
+notesync/
+├── client/                     # Vite + React 19 + TypeScript Frontend
+│   ├── src/
+│   │   ├── components/        # Header, Sidebar, VideoPlayer, NoteEditor, NoteList, StickyNotes, AIModal, ExportModal
+│   │   ├── data/              # Pre-populated sample video notes & mock data
+│   │   ├── store/             # Zustand store with localStorage persistence
+│   │   ├── types/             # TypeScript definitions
+│   │   ├── App.tsx            # Main Notion grid workspace layout
+│   │   └── index.css          # Design system tokens & Notion CSS
+├── server/                     # Node.js + Express API Server Skeleton
+├── docs/                       # Architecture & Documentation
+└── README.md                   # Main Project README
+```
+
+---
+
+## ✅ Progress & Git Commit Log (Day 1 Complete)
+
+All initial **7 frontend commit milestones** have been implemented, verified, committed, and pushed to GitHub:
+
+| Commit Hash | Commit Message | Highlights |
+|---|---|---|
+| `a471fe1` | `feat: polish UI with animations and responsive design` | Framer Motion `AnimatePresence`, smooth card transitions, theme toggle, mobile drawer |
+| `d0772e6` | `feat: add screenshot bookmarks and timeline navigation` | Video frame canvas screenshot capture, screenshot gallery modal, click-to-jump timeline |
+| `ad81263` | `feat: enable note editing, deletion and favorites` | Full note CRUD, starring favorites filter toggle, category pill filters, live search bar |
+| `46afdc1` | `feat: create timestamp note panel` | Instant <kbd>N</kbd> key shortcut, auto-timestamp reader, auto-focus title input, rich markdown toolbar |
+| `a3e5b6d` | `feat: implement custom HTML5 video player` | Play/Pause, seek timeline, volume slider, playback speeds (0.5x–2x), fullscreen toggle |
+| `f8acc07` | `feat: build Notion-inspired application shell` | Top navbar, responsive sidebar, breadcrumbs, search shortcut badge (`Cmd/Ctrl+K`), sticky notes drawer |
+| `0fbce3a` | `feat: initialize Vite + React + Tailwind + shadcn` | Vite + React 19 + TypeScript + Tailwind CSS v4, Zustand store with `localStorage` persistence |
+
+---
+
+## 🔮 Upcoming Progress Roadmap (Day 2+)
+
+- [ ] **Node.js & Express REST API**: Setup backend endpoints in `server/`.
+- [ ] **MongoDB Persistence**: Schema models for Users, Videos, Timestamp Notes, and Screenshots.
+- [ ] **JWT Authentication**: Secure login, registration, and user session management.
+- [ ] **Multer File Uploads**: Cloud image upload pipeline for video screenshots.
+- [ ] **Real-time Multi-Device Sync**: Cross-device state syncing over WebSockets / REST.
+
+---
+
+## ⚡ Quick Start
 
 ```bash
-# Navigate to client directory
+# 1. Clone or navigate to the project directory
 cd client
 
-# Install dependencies
+# 2. Install dependencies
 npm install
 
-# Start local development server
+# 3. Start local development server
 npm run dev
 
-# Build for production
+# 4. Build for production
 npm run build
 ```
 
 ---
 
+## ⌨️ Keyboard Shortcuts Reference
+
+| Shortcut | Action |
+|---|---|
+| <kbd>N</kbd> | Freeze current video timestamp & create a new note |
+| <kbd>Cmd</kbd> + <kbd>K</kbd> / <kbd>Ctrl</kbd> + <kbd>K</kbd> | Focus global search bar |
+
+---
+
 ## 📄 License
 
-This repository is maintained for personal learning and note-taking productivity.
+Maintained as a personal open-source workspace project.
