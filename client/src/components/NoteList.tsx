@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
   Star,
@@ -125,94 +126,100 @@ export const NoteList: React.FC<NoteListProps> = ({ onJumpToTimestamp, onEditNot
         </div>
       ) : (
         <div className="space-y-3">
-          {videoNotes.map((note) => (
-            <div
-              key={note.id}
-              className={`rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-2xs hover:shadow-md transition-all space-y-2.5 ${getNoteColorClass(
-                note.color
-              )}`}
-            >
-              {/* Header Row: Timestamp Badge & CRUD Actions */}
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => onJumpToTimestamp(note.timestamp)}
-                  className="flex items-center space-x-1.5 px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-lg text-xs font-mono font-semibold transition-all group/ts"
-                  title="Click to jump to video timestamp"
-                >
-                  <Clock className="w-3.5 h-3.5 text-indigo-500 group-hover/ts:scale-110 transition-transform" />
-                  <span>{note.formattedTime}</span>
-                  <ExternalLink className="w-3 h-3 text-zinc-400 ml-0.5" />
-                </button>
-
-                <div className="flex items-center space-x-1">
-                  {/* Category Pill */}
-                  <span className="text-[10px] px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-md font-medium">
-                    {note.category}
-                  </span>
-
-                  {/* Favorite Star Button */}
+          <AnimatePresence>
+            {videoNotes.map((note) => (
+              <motion.div
+                key={note.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className={`rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-2xs hover:shadow-md transition-all space-y-2.5 ${getNoteColorClass(
+                  note.color
+                )}`}
+              >
+                {/* Header Row: Timestamp Badge & CRUD Actions */}
+                <div className="flex items-center justify-between">
                   <button
-                    onClick={() => toggleFavoriteNote(note.id)}
-                    className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-amber-500 transition-colors"
-                    title="Toggle Favorite"
+                    onClick={() => onJumpToTimestamp(note.timestamp)}
+                    className="flex items-center space-x-1.5 px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-lg text-xs font-mono font-semibold transition-all group/ts"
+                    title="Click to jump to video timestamp"
                   >
-                    <Star
-                      className={`w-3.5 h-3.5 ${
-                        note.isFavorite ? 'text-amber-400 fill-amber-400' : ''
-                      }`}
-                    />
+                    <Clock className="w-3.5 h-3.5 text-indigo-500 group-hover/ts:scale-110 transition-transform" />
+                    <span>{note.formattedTime}</span>
+                    <ExternalLink className="w-3 h-3 text-zinc-400 ml-0.5" />
                   </button>
 
-                  {/* Edit Button */}
-                  <button
-                    onClick={() => onEditNote(note)}
-                    className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
-                    title="Edit Note"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center space-x-1">
+                    {/* Category Pill */}
+                    <span className="text-[10px] px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-md font-medium">
+                      {note.category}
+                    </span>
 
-                  {/* Delete Button */}
-                  <button
-                    onClick={() => deleteNote(note.id)}
-                    className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-red-500 transition-colors"
-                    title="Delete Note"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
+                    {/* Favorite Star Button */}
+                    <button
+                      onClick={() => toggleFavoriteNote(note.id)}
+                      className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-amber-500 transition-colors"
+                      title="Toggle Favorite"
+                    >
+                      <Star
+                        className={`w-3.5 h-3.5 ${
+                          note.isFavorite ? 'text-amber-400 fill-amber-400' : ''
+                        }`}
+                      />
+                    </button>
 
-              {/* Title & Markdown Content */}
-              <div>
-                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                  {note.title}
-                </h3>
-                <div className="mt-1 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans">
-                  {note.content}
-                </div>
-              </div>
+                    {/* Edit Button */}
+                    <button
+                      onClick={() => onEditNote(note)}
+                      className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                      title="Edit Note"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
 
-              {/* Attached Screenshot Thumbnail */}
-              {note.screenshot && (
-                <div
-                  onClick={() => onJumpToTimestamp(note.screenshot!.timestamp)}
-                  className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 cursor-pointer group/sc max-w-sm"
-                  title="Click to jump to screenshot timestamp"
-                >
-                  <img
-                    src={note.screenshot.dataUrl}
-                    alt={`Screenshot at ${note.screenshot.formattedTime}`}
-                    className="w-full h-28 object-cover group-hover/sc:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/sc:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium space-x-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Jump to {note.screenshot.formattedTime}</span>
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => deleteNote(note.id)}
+                      className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-red-500 transition-colors"
+                      title="Delete Note"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
-          ))}
+
+                {/* Title & Markdown Content */}
+                <div>
+                  <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                    {note.title}
+                  </h3>
+                  <div className="mt-1 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans">
+                    {note.content}
+                  </div>
+                </div>
+
+                {/* Attached Screenshot Thumbnail */}
+                {note.screenshot && (
+                  <div
+                    onClick={() => onJumpToTimestamp(note.screenshot!.timestamp)}
+                    className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 cursor-pointer group/sc max-w-sm"
+                    title="Click to jump to screenshot timestamp"
+                  >
+                    <img
+                      src={note.screenshot.dataUrl}
+                      alt={`Screenshot at ${note.screenshot.formattedTime}`}
+                      className="w-full h-28 object-cover group-hover/sc:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/sc:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium space-x-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Jump to {note.screenshot.formattedTime}</span>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>
