@@ -10,6 +10,7 @@ import {
   Menu,
   Command,
   Camera,
+  LogOut,
 } from 'lucide-react';
 import { useNoteSyncStore } from '../store/useNoteSyncStore';
 
@@ -29,6 +30,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar, onOpenScr
     setAiModalOpen,
     setExportModalOpen,
     activeVideo,
+    user,
+    logout,
   } = useNoteSyncStore();
 
   return (
@@ -138,6 +141,33 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar, onOpenScr
         >
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
+
+        {/* User Identity & Logout */}
+        {user && (
+          <div className="flex items-center space-x-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-[10px] font-bold text-indigo-600 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/40 uppercase">
+              {user.username.substring(0, 2)}
+            </div>
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="text-[10px] font-bold leading-tight text-zinc-800 dark:text-zinc-200 truncate max-w-[80px]">
+                {user.username}
+              </span>
+              <button
+                onClick={logout}
+                className="text-[9px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-medium text-left transition-colors cursor-pointer"
+              >
+                Log Out
+              </button>
+            </div>
+            <button
+              onClick={logout}
+              className="sm:hidden p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all cursor-pointer"
+              title="Log Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

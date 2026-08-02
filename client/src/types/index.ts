@@ -75,4 +75,13 @@ export interface NoteSyncState {
   setAiModalOpen: (open: boolean) => void;
   exportModalOpen: boolean;
   setExportModalOpen: (open: boolean) => void;
+
+  // Authentication & Remote Sync State
+  token: string | null;
+  user: { _id: string; username: string; email: string; theme: 'light' | 'dark' } | null;
+  authLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
+  logout: () => void;
+  fetchWorkspaceData: () => Promise<void>;
 }

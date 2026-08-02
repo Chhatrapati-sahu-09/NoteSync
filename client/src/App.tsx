@@ -10,6 +10,8 @@ import { ExportModal } from './components/ExportModal';
 import { ScreenshotGalleryModal } from './components/ScreenshotGalleryModal';
 import type { Note, Screenshot } from './types';
 import { useNoteSyncStore } from './store/useNoteSyncStore';
+import { AuthScreen } from './components/AuthScreen';
+import { useEffect } from 'react';
 
 export function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -18,7 +20,25 @@ export function App() {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [attachedScreenshot, setAttachedScreenshot] = useState<Screenshot | null>(null);
 
-  const { activeVideo } = useNoteSyncStore();
+  const { activeVideo, token, fetchWorkspaceData, theme } = useNoteSyncStore();
+
+  useEffect(() => {
+    if (token) {
+      fetchWorkspaceData();
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  if (!token) {
+    return <AuthScreen />;
+  }
 
   const handleJumpToTimestamp = (ts: number) => {
     setSeekTime(ts);
