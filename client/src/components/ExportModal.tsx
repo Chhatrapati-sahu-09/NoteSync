@@ -12,16 +12,38 @@ export const ExportModal: React.FC = () => {
 
   const videoNotes = notes.filter((n) => n.videoId === activeVideo.id);
 
+  const getImageDataUrl = async (url: string): Promise<string | null> => {
+    if (url.startsWith('data:')) return url;
+    try {
+      const imgUrl = url.startsWith('http') ? url : window.location.origin + url;
+      const res = await fetch(imgUrl);
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.error('Failed to fetch image Data URL', e);
+      return null;
+    }
+  };
+
   const exportAsMarkdown = () => {
-    let mdContent = `# Notesync Export: ${activeVideo.title}\n\n`;
-    mdContent += `*Exported on ${new Date().toLocaleDateString()}*\n\n---\n\n`;
+    let mdContent = `# NoteSync Export: ${activeVideo.title}\n\n`;
+    mdContent += `*Exported on ${new Date().toLocaleString()}*\n\n---\n\n`;
 
     videoNotes.forEach((n, idx) => {
       mdContent += `### ${idx + 1}. [${n.formattedTime}] ${n.title}\n`;
-      mdContent += `**Category:** ${n.category}\n\n`;
+      mdContent += `**Category:** \`${n.category}\`  |  **Favorite:** ${n.isFavorite ? '★ Yes' : '☆ No'}\n\n`;
       mdContent += `${n.content}\n\n`;
       if (n.screenshot) {
-        mdContent += `*Attached Frame Screenshot at ${n.screenshot.formattedTime}*\n\n`;
+        const imgUrl = n.screenshot.dataUrl.startsWith('data:')
+          ? n.screenshot.dataUrl
+          : window.location.origin + n.screenshot.dataUrl;
+        mdContent += `#### Attached Frame Snapshot:\n`;
+        mdContent += `![Frame Snapshot at ${n.screenshot.formattedTime}](${imgUrl})\n\n`;
       }
       mdContent += `---\n\n`;
     });
@@ -30,68 +52,126 @@ export const ExportModal: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${activeVideo.title.substring(0, 20)}_notes.md`;
+    link.download = `${activeVideo.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_notes.md`;
     link.click();
 
     triggerSuccess('Markdown');
   };
 
   const exportAsTXT = () => {
-    let txt = `NOTESYNC EXPORT: ${activeVideo.title}\nDate: ${new Date().toLocaleString()}\n\n`;
+    let txt = `==================================================\n`;
+    txt += `  NOTESYNC LECTURE EXPORT: ${activeVideo.title.toUpperCase()}\n`;
+    txt += `  Export Date: ${new Date().toLocaleString()}\n`;
+    txt += `==================================================\n\n`;
 
     videoNotes.forEach((n, idx) => {
-      txt += `[${n.formattedTime}] ${n.title} (${n.category})\n`;
+      txt += `--------------------------------------------------\n`;
+      txt += `[${idx + 1}] TIME: ${n.formattedTime} | CATEGORY: ${n.category}\n`;
+      txt += `TITLE: ${n.title}\n`;
+      txt += `FAVORITE: ${n.isFavorite ? 'Yes' : 'No'}\n`;
+      txt += `--------------------------------------------------\n`;
       txt += `${n.content}\n`;
-      txt += `----------------------------------------\n\n`;
+      if (n.screenshot) {
+        txt += `[Attached Screenshot Frame Saved at ${n.screenshot.formattedTime}]\n`;
+      }
+      txt += `\n\n`;
     });
 
     const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${activeVideo.title.substring(0, 20)}_notes.txt`;
+    link.download = `${activeVideo.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_notes.txt`;
     link.click();
 
     triggerSuccess('TXT');
   };
 
-  const exportAsPDF = () => {
+  const exportAsPDF = async () => {
     try {
       const doc = new jsPDF();
+      
+      // Document Header Accent
+      doc.setFillColor(17, 24, 39); // Zinc-900 / Dark accent bar
+      doc.rect(0, 0, 210, 8, 'F');
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.text(`NoteSync: ${activeVideo.title.substring(0, 40)}`, 14, 20);
+      doc.setTextColor(17, 24, 39);
+      doc.text(`NoteSync Workspace Notes`, 14, 22);
 
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text(`Exported Date: ${new Date().toLocaleDateString()}`, 14, 28);
-      doc.line(14, 32, 196, 32);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Video Lecture: ${activeVideo.title.substring(0, 70)}${activeVideo.title.length > 70 ? '...' : ''}`, 14, 29);
+      doc.text(`Export Date: ${new Date().toLocaleString()}`, 14, 35);
+      doc.line(14, 39, 196, 39);
 
-      let yPos = 40;
+      let yPos = 48;
 
-      videoNotes.forEach((n, idx) => {
-        if (yPos > 270) {
-          doc.addPage();
-          yPos = 20;
+      for (let idx = 0; idx < videoNotes.length; idx++) {
+        const n = videoNotes[idx];
+        
+        // Calculate needed spacing. If page overflow, insert a page break
+        const splitText = doc.splitTextToSize(n.content, 175);
+        let neededSpace = 25 + splitText.length * 5;
+        let hasImage = false;
+        let imgDataUrl: string | null = null;
+
+        if (n.screenshot) {
+          imgDataUrl = await getImageDataUrl(n.screenshot.dataUrl);
+          if (imgDataUrl) {
+            neededSpace += 52; // height of image + margin
+            hasImage = true;
+          }
         }
 
+        if (yPos + neededSpace > 280) {
+          doc.addPage();
+          // Draw page top accent bar
+          doc.setFillColor(17, 24, 39);
+          doc.rect(0, 0, 210, 8, 'F');
+          yPos = 22;
+        }
+
+        // Draw note card background header container
+        doc.setFillColor(248, 250, 252); // soft slate border box
+        doc.rect(14, yPos, 182, 9, 'F');
+        
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
-        doc.text(`[${n.formattedTime}] ${n.title}`, 14, yPos);
+        doc.setTextColor(30, 41, 59);
+        doc.text(`[${n.formattedTime}] ${n.title}`, 18, yPos + 6);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.text(`Category: ${n.category}`, 14, yPos + 6);
+        doc.setFontSize(8.5);
+        doc.setTextColor(99, 102, 241); // indigo categories
+        doc.text(`Category: ${n.category}  |  Favorite: ${n.isFavorite ? 'Yes' : 'No'}`, 18, yPos + 14);
 
-        const splitText = doc.splitTextToSize(n.content, 175);
-        doc.text(splitText, 14, yPos + 12);
+        doc.setFontSize(9.5);
+        doc.setTextColor(51, 65, 85);
+        doc.text(splitText, 18, yPos + 20);
 
-        yPos += 16 + splitText.length * 5;
-        doc.setDrawColor(230, 230, 230);
-        doc.line(14, yPos - 4, 196, yPos - 4);
-      });
+        yPos += 22 + splitText.length * 5;
 
-      doc.save(`${activeVideo.title.substring(0, 20)}_notes.pdf`);
+        if (hasImage && imgDataUrl) {
+          try {
+            // Draw screenshot image
+            doc.addImage(imgDataUrl, 'PNG', 18, yPos, 85, 48);
+            yPos += 52;
+          } catch (imgError) {
+            console.error('Failed to render image in jsPDF', imgError);
+          }
+        }
+
+        // Separator line
+        yPos += 4;
+        doc.setDrawColor(241, 245, 249);
+        doc.line(14, yPos, 196, yPos);
+        yPos += 8;
+      }
+
+      doc.save(`${activeVideo.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_notes.pdf`);
       triggerSuccess('PDF');
     } catch (e) {
       console.error('Failed to export PDF', e);
