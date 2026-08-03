@@ -37,6 +37,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [flashScreenshotAlert, setFlashScreenshotAlert] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+
+  // Reset error when video changes
+  useEffect(() => {
+    setVideoError(null);
+  }, [activeVideo]);
 
   // Sync seek requests from note card clicks
   useEffect(() => {
@@ -165,6 +171,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const handleVideoError = () => {
+    setVideoError('The remote video link failed to load. This can happen if Google Storage is blocked on your network or due to CORS limitations. You can upload any local video file (MP4/WebM) via the sidebar "Upload Video" button to run it offline.');
+  };
+
   if (!activeVideo) {
     return (
       <div className="aspect-video bg-zinc-900 rounded-2xl flex flex-col items-center justify-center text-zinc-500 border border-zinc-800 p-6 space-y-3">
@@ -178,14 +188,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     <div className="relative rounded-2xl overflow-hidden bg-black border border-zinc-200 dark:border-zinc-800 shadow-md group transition-all">
       {/* Video Container */}
       <div className="relative aspect-video bg-black flex items-center justify-center">
-        <video
-          ref={videoRef}
-          src={activeVideo.url}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onClick={togglePlay}
-          className="w-full h-full object-contain cursor-pointer"
-        />
+        {videoError ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-950 text-zinc-400 z-10 space-y-3">
+            <VideoIcon className="w-10 h-10 stroke-1 text-red-400" />
+            <p className="text-xs font-semibold text-zinc-200">Video Loading Failed</p>
+            <p className="text-[11px] text-zinc-500 max-w-sm leading-relaxed">
+              {videoError}
+            </p>
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            src={activeVideo.url}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onError={handleVideoError}
+            onClick={togglePlay}
+            crossOrigin="anonymous"
+            className="w-full h-full object-contain cursor-pointer"
+          />
+        )}
 
         <canvas ref={canvasRef} className="hidden" />
 
