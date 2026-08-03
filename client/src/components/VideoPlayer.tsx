@@ -309,7 +309,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handleVideoError = () => {
-    setVideoError('The remote video link failed to load. This can happen if Google Storage is blocked on your network or due to CORS limitations. You can upload any local video file (MP4/WebM) via the sidebar "Upload Video" button to run it offline.');
+    if (activeVideo && activeVideo.url.startsWith('blob:')) {
+      setVideoError('This local video session has expired. Local files are only cached temporarily in your browser session. Please re-upload/select the video file from the sidebar to resume taking notes.');
+    } else {
+      setVideoError('The remote video link failed to load. This can happen if Google Storage is blocked on your network or due to CORS limitations. You can upload any local video file (MP4/WebM) via the sidebar "Upload Video" button to run it offline.');
+    }
   };
 
   if (!activeVideo) {
