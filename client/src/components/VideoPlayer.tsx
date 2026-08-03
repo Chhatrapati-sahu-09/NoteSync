@@ -10,7 +10,6 @@ import {
   RotateCw,
   Gauge,
   Video as VideoIcon,
-  Sparkles,
 } from 'lucide-react';
 import { useNoteSyncStore } from '../store/useNoteSyncStore';
 
@@ -20,6 +19,13 @@ interface VideoPlayerProps {
   onSeekHandled?: () => void;
 }
 
+// Helper to extract YouTube video ID from URL
+const getYoutubeId = (url: string) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
+};
+
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onCaptureScreenshot,
   seekTime,
@@ -27,35 +33,138 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ytPlayerRef = useRef<any>(null);
 
   const { activeVideo, updateVideoProgress, addScreenshot } = useNoteSyncStore();
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
+  const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [flashScreenshotAlert, setFlashScreenshotAlert] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
 
-  // Reset error when video changes
+  const youtubeId = activeVideo ? getYoutubeId(activeVideo.url) : null;
+
+  // Reset states when active video changes
   useEffect(() => {
     setVideoError(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
   }, [activeVideo]);
+
+  // Initialize YouTube Iframe API if YouTube video loaded
+  useEffect(() => {
+    if (!youtubeId || !activeVideo) {
+      ytPlayerRef.current = null;
+      return;
+    }
+
+    // Inject YouTube API Script if not already present
+    if (!(window as any).YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+
+    let pollInterval: any;
+    let timeInterval: any;
+
+    const createPlayer = () => {
+      if (!(window as any).YT || !(window as any).YT.Player) return;
+      clearInterval(pollInterval);
+
+      // Clean up previous instance container if existing
+      const container = document.getElementById('yt-player-element');
+      if (container) {
+        container.innerHTML = '';
+      }
+
+      ytPlayerRef.current = new (window as any).YT.Player('yt-player-element', {
+        height: '100%',
+        width: '100%',
+        videoId: youtubeId,
+        playerVars: {
+          autoplay: 0,
+          controls: 0, // hide native controls to use NoteSync custom bar
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: (event: any) => {
+            setDuration(event.target.getDuration());
+            event.target.setVolume(volume * 100);
+            if (isMuted) event.target.mute();
+            event.target.setPlaybackRate(playbackSpeed);
+          },
+          onStateChange: (event: any) => {
+            const state = event.data;
+            if (state === (window as any).YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+              timeInterval = setInterval(() => {
+                if (ytPlayerRef.current && ytPlayerRef.current.getCurrentTime) {
+                  const cur = ytPlayerRef.current.getCurrentTime();
+                  setCurrentTime(cur);
+                  updateVideoProgress(activeVideo.id, cur);
+                }
+              }, 250);
+            } else {
+              setIsPlaying(false);
+              clearInterval(timeInterval);
+            }
+          },
+        },
+      });
+    };
+
+    if ((window as any).YT && (window as any).YT.Player) {
+      createPlayer();
+    } else {
+      pollInterval = setInterval(createPlayer, 100);
+    }
+
+    return () => {
+      clearInterval(pollInterval);
+      clearInterval(timeInterval);
+      if (ytPlayerRef.current && ytPlayerRef.current.destroy) {
+        ytPlayerRef.current.destroy();
+      }
+    };
+  }, [activeVideo, youtubeId]);
 
   // Sync seek requests from note card clicks
   useEffect(() => {
-    if (seekTime !== undefined && seekTime !== null && videoRef.current) {
-      videoRef.current.currentTime = seekTime;
+    if (seekTime !== undefined && seekTime !== null) {
+      if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+        ytPlayerRef.current.seekTo(seekTime, true);
+        ytPlayerRef.current.playVideo();
+      } else if (videoRef.current) {
+        videoRef.current.currentTime = seekTime;
+        videoRef.current.play().catch(() => {});
+      }
       setCurrentTime(seekTime);
-      videoRef.current.play().catch(() => {});
       setIsPlaying(true);
       if (onSeekHandled) onSeekHandled();
     }
-  }, [seekTime]);
+  }, [seekTime, youtubeId]);
 
   const togglePlay = () => {
+    if (youtubeId && ytPlayerRef.current) {
+      if (isPlaying) {
+        ytPlayerRef.current.pauseVideo();
+      } else {
+        ytPlayerRef.current.playVideo();
+      }
+      setIsPlaying(!isPlaying);
+      return;
+    }
+
     if (!videoRef.current) return;
     if (isPlaying) {
       videoRef.current.pause();
@@ -66,7 +175,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
+    if (videoRef.current && !youtubeId) {
       const cur = videoRef.current.currentTime;
       setCurrentTime(cur);
       if (activeVideo) {
@@ -76,29 +185,46 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handleLoadedMetadata = () => {
-    if (videoRef.current) {
+    if (videoRef.current && !youtubeId) {
       setDuration(videoRef.current.duration);
     }
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
-    if (videoRef.current) {
+    setCurrentTime(val);
+    if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+      ytPlayerRef.current.seekTo(val, true);
+    } else if (videoRef.current) {
       videoRef.current.currentTime = val;
-      setCurrentTime(val);
     }
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
     setVolume(val);
-    if (videoRef.current) {
+    if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.setVolume) {
+      ytPlayerRef.current.setVolume(val * 100);
+      ytPlayerRef.current.unMute();
+      setIsMuted(val === 0);
+    } else if (videoRef.current) {
       videoRef.current.volume = val;
       setIsMuted(val === 0);
     }
   };
 
   const toggleMute = () => {
+    if (youtubeId && ytPlayerRef.current) {
+      if (isMuted) {
+        ytPlayerRef.current.unMute();
+        ytPlayerRef.current.setVolume(volume * 100);
+      } else {
+        ytPlayerRef.current.mute();
+      }
+      setIsMuted(!isMuted);
+      return;
+    }
+
     if (!videoRef.current) return;
     if (isMuted) {
       videoRef.current.volume = volume || 0.8;
@@ -111,27 +237,38 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed);
-    if (videoRef.current) {
+    if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.setPlaybackRate) {
+      ytPlayerRef.current.setPlaybackRate(speed);
+    } else if (videoRef.current) {
       videoRef.current.playbackRate = speed;
     }
   };
 
   const skipTime = (seconds: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, Math.min(duration, currentTime + seconds));
+    const target = Math.max(0, Math.min(duration, currentTime + seconds));
+    setCurrentTime(target);
+    if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+      ytPlayerRef.current.seekTo(target, true);
+    } else if (videoRef.current) {
+      videoRef.current.currentTime = target;
     }
   };
 
   const toggleFullscreen = () => {
-    if (videoRef.current) {
-      if (videoRef.current.requestFullscreen) {
-        videoRef.current.requestFullscreen();
+    const playerWrapper = document.getElementById('player-wrapper');
+    if (playerWrapper) {
+      if (playerWrapper.requestFullscreen) {
+        playerWrapper.requestFullscreen();
       }
     }
   };
 
-  // Screenshot Capture tool using HTML5 Canvas
   const captureScreenshot = () => {
+    if (youtubeId) {
+      alert("Canvas snapshot frames cannot be extracted from YouTube embedded videos due to browser cross-origin frame protections. Choose a local video file (MP4/WebM) to capture screenshots.");
+      return;
+    }
+
     if (!videoRef.current) return;
 
     const video = videoRef.current;
@@ -185,7 +322,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }
 
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-black border border-zinc-200 dark:border-zinc-800 shadow-md group transition-all">
+    <div id="player-wrapper" className="relative rounded-2xl overflow-hidden bg-black border border-zinc-200 dark:border-zinc-800 shadow-md group transition-all">
       {/* Video Container */}
       <div className="relative aspect-video bg-black flex items-center justify-center">
         {videoError ? (
@@ -195,6 +332,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <p className="text-[11px] text-zinc-500 max-w-sm leading-relaxed">
               {videoError}
             </p>
+          </div>
+        ) : youtubeId ? (
+          /* YouTube Player placeholder div */
+          <div className="w-full h-full relative z-0">
+            <div id="yt-player-element" className="w-full h-full pointer-events-none" />
+            {/* Overlay click catcher to support play/pause clicks on player body */}
+            <div onClick={togglePlay} className="absolute inset-0 bg-transparent cursor-pointer z-10" />
           </div>
         ) : (
           <video
@@ -221,7 +365,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       </div>
 
       {/* Custom Control Bar (Notion Clean Aesthetic) */}
-      <div className="p-3 bg-zinc-950 text-white space-y-2 border-t border-zinc-800">
+      <div className="p-3 bg-zinc-950 text-white space-y-2 border-t border-zinc-800 relative z-20">
         {/* Timeline Bar */}
         <div className="flex items-center space-x-2 text-[11px] font-mono text-zinc-400">
           <span>{formatTime(currentTime)}</span>
@@ -243,7 +387,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <div className="flex items-center space-x-2">
             <button
               onClick={togglePlay}
-              className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-all"
+              className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-all cursor-pointer"
               title={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -251,14 +395,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             <button
               onClick={() => skipTime(-10)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
               title="Rewind 10s"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => skipTime(10)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
               title="Forward 10s"
             >
               <RotateCw className="w-3.5 h-3.5" />
@@ -268,7 +412,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div className="flex items-center space-x-1 pl-2 border-l border-zinc-800">
               <button
                 onClick={toggleMute}
-                className="p-1 text-zinc-400 hover:text-white transition-colors"
+                className="p-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
               >
                 {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
               </button>
@@ -289,8 +433,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Capture Frame Button */}
             <button
               onClick={captureScreenshot}
-              className="flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-xs font-medium transition-all"
-              title="Capture Video Frame Screenshot"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                youtubeId
+                  ? 'bg-zinc-800/40 text-zinc-500 border-zinc-800/60 cursor-not-allowed'
+                  : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border-amber-500/40'
+              }`}
+              title={youtubeId ? "Screenshots disabled for YouTube" : "Capture Video Frame Screenshot"}
             >
               <Camera className="w-3.5 h-3.5" />
               <span>Capture Frame</span>
@@ -298,7 +446,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             {/* Playback Speed Select */}
             <div className="relative group/speed">
-              <button className="flex items-center space-x-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-md text-xs font-mono text-zinc-300">
+              <button className="flex items-center space-x-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-md text-xs font-mono text-zinc-300 cursor-pointer">
                 <Gauge className="w-3 h-3 text-zinc-400" />
                 <span>{playbackSpeed}x</span>
               </button>
@@ -307,7 +455,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <button
                     key={spd}
                     onClick={() => handleSpeedChange(spd)}
-                    className={`px-2.5 py-1 text-[11px] rounded text-left font-mono transition-colors ${
+                    className={`px-2.5 py-1 text-[11px] rounded text-left font-mono transition-colors cursor-pointer ${
                       playbackSpeed === spd
                         ? 'bg-indigo-600 text-white'
                         : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
@@ -322,7 +470,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Fullscreen */}
             <button
               onClick={toggleFullscreen}
-              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all cursor-pointer"
               title="Fullscreen"
             >
               <Maximize className="w-4 h-4" />
