@@ -11,7 +11,7 @@ import {
   Gauge,
   Video as VideoIcon,
 } from 'lucide-react';
-import { useNoteSyncStore } from '../store/useNoteSyncStore';
+import { useNoteSyncStore, ACTIVE_SESSION_BLOBS } from '../store/useNoteSyncStore';
 
 interface VideoPlayerProps {
   onCaptureScreenshot?: (dataUrl: string, timestamp: number, formattedTime: string) => void;
@@ -54,6 +54,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+
+    if (activeVideo && activeVideo.url.startsWith('blob:') && !ACTIVE_SESSION_BLOBS.has(activeVideo.url)) {
+      setVideoError('This local video session has expired. Local files are only cached temporarily in your browser session. Please re-upload/select the video file from the sidebar to resume taking notes.');
+    }
   }, [activeVideo]);
 
   // Initialize YouTube Iframe API if YouTube video loaded

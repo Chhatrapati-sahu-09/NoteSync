@@ -16,6 +16,8 @@ const getInitialAuth = () => {
 
 const authData = getInitialAuth();
 
+export const ACTIVE_SESSION_BLOBS = new Set<string>();
+
 const getHeaders = () => {
   const token = useNoteSyncStore.getState().token;
   return {
@@ -210,6 +212,9 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
 
   addVideo: async (videoData) => {
     try {
+      if (videoData.url.startsWith('blob:')) {
+        ACTIVE_SESSION_BLOBS.add(videoData.url);
+      }
       const res = await fetch('/api/videos', {
         method: 'POST',
         headers: getHeaders(),
