@@ -21,7 +21,7 @@ interface VideoPlayerProps {
 
 // Helper to extract YouTube video ID from URL
 const getYoutubeId = (url: string) => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
 };
@@ -45,6 +45,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [flashScreenshotAlert, setFlashScreenshotAlert] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+
+  // Keep references to prevent recreating player
+  const volumeRef = useRef(volume);
+  const isMutedRef = useRef(isMuted);
+  const playbackSpeedRef = useRef(playbackSpeed);
+
+  useEffect(() => {
+    volumeRef.current = volume;
+    isMutedRef.current = isMuted;
+    playbackSpeedRef.current = playbackSpeed;
+  }, [volume, isMuted, playbackSpeed]);
 
   const youtubeId = activeVideo ? getYoutubeId(activeVideo.url) : null;
 
@@ -103,9 +114,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         events: {
           onReady: (event: any) => {
             setDuration(event.target.getDuration());
-            event.target.setVolume(volume * 100);
-            if (isMuted) event.target.mute();
-            event.target.setPlaybackRate(playbackSpeed);
+            event.target.setVolume(volumeRef.current * 100);
+            if (isMutedRef.current) event.target.mute();
+            event.target.setPlaybackRate(playbackSpeedRef.current);
           },
           onStateChange: (event: any) => {
             const state = event.data;
@@ -140,7 +151,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ytPlayerRef.current.destroy();
       }
     };
-  }, [activeVideo, youtubeId]);
+  }, [activeVideo, youtubeId, updateVideoProgress]);
 
   // Sync seek requests from note card clicks
   useEffect(() => {
@@ -156,7 +167,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setIsPlaying(true);
       if (onSeekHandled) onSeekHandled();
     }
-  }, [seekTime, youtubeId]);
+  }, [seekTime, youtubeId, onSeekHandled]);
 
   const togglePlay = () => {
     if (youtubeId && ytPlayerRef.current) {
@@ -287,7 +298,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         const dataUrl = canvas.toDataURL('image/png');
         const formatted = formatTime(currentTime);
 
-        const newSc = addScreenshot({
+        addScreenshot({
           timestamp: currentTime,
           formattedTime: formatted,
           dataUrl,

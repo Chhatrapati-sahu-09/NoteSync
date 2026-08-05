@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles,
   X,
@@ -35,13 +35,13 @@ export const AIModal: React.FC = () => {
   const [isFlipped, setIsFlipped] = useState(false);
 
   // Headers helper
-  const getHeaders = () => ({
+  const getHeaders = useCallback(() => ({
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  });
+  }), [token]);
 
   // Fetch summary from API
-  const generateSummary = async () => {
+  const generateSummary = useCallback(async () => {
     if (!activeVideo) return;
     setLoadingSummary(true);
     try {
@@ -65,12 +65,11 @@ export const AIModal: React.FC = () => {
     } finally {
       setLoadingSummary(false);
     }
-  };
+  }, [activeVideo, notes, getHeaders]);
 
   // Fetch flashcards from API
-  const generateFlashcards = async () => {
+  const generateFlashcards = useCallback(async () => {
     if (!activeVideo) return;
-    setLoadingFlashcards(false);
     setLoadingFlashcards(true);
     try {
       const activeNotes = notes.filter(n => n.videoId === activeVideo.id);
@@ -90,7 +89,7 @@ export const AIModal: React.FC = () => {
     } finally {
       setLoadingFlashcards(false);
     }
-  };
+  }, [activeVideo, notes, getHeaders]);
 
   // Fetch explanation from API
   const generateExplanation = async (e?: React.FormEvent) => {
@@ -123,7 +122,7 @@ export const AIModal: React.FC = () => {
     if (aiModalOpen && flashcards.length === 0 && activeVideo && notes.length > 0) {
       generateFlashcards();
     }
-  }, [aiModalOpen]);
+  }, [aiModalOpen, summary, activeVideo, notes, flashcards, generateSummary, generateFlashcards]);
 
   if (!aiModalOpen) return null;
 

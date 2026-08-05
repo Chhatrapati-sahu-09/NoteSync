@@ -5,12 +5,9 @@ import {
   Star,
   Trash2,
   Edit2,
-  Tag,
-  Search,
   ExternalLink,
   Sparkles,
   FileText,
-  Filter,
 } from 'lucide-react';
 import { useNoteSyncStore } from '../store/useNoteSyncStore';
 import type { Note } from '../types';

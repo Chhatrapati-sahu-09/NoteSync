@@ -26,7 +26,7 @@ export function App() {
     if (token) {
       fetchWorkspaceData();
     }
-  }, [token]);
+  }, [token, fetchWorkspaceData]);
 
   useEffect(() => {
     if (theme === 'dark') {

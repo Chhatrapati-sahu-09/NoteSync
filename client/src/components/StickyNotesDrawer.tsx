@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StickyNote, X, Plus, Trash2, Palette, Check } from 'lucide-react';
+import { StickyNote, X, Plus, Trash2 } from 'lucide-react';
 import { useNoteSyncStore } from '../store/useNoteSyncStore';
 
 interface QuickSticky {

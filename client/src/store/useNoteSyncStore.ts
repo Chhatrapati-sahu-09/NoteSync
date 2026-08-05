@@ -9,7 +9,7 @@ const getInitialAuth = () => {
       token,
       user: userJson ? JSON.parse(userJson) : null,
     };
-  } catch (e) {
+  } catch {
     return { token: null, user: null };
   }
 };

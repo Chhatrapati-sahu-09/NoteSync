@@ -70,7 +70,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
       setTimestamp(attachedScreenshot.timestamp);
       titleInputRef.current?.focus();
     }
-  }, [attachedScreenshot]);
+  }, [attachedScreenshot, editingNote]);
 
   // Keyboard shortcut listener for 'N' to spawn a new note & auto focus
   useEffect(() => {
