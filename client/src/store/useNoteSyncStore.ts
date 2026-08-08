@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { NoteSyncState, Note, VideoItem, Screenshot, ThemeMode } from '../types';
+import { INITIAL_VIDEOS, INITIAL_NOTES } from '../data/mockData';
 
 const getInitialAuth = () => {
   try {
@@ -26,6 +27,21 @@ const getHeaders = () => {
   };
 };
 
+const getJSONResponse = async (res: Response, errorPrefix: string) => {
+  if (res.status === 502) {
+    throw new Error('Backend server is offline (502 Bad Gateway). Please start the backend by running "npm run dev" inside the server directory.');
+  }
+  const contentType = res.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    throw new Error(`${errorPrefix} failed: Backend server connection could not be established.`);
+  }
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || `${errorPrefix} failed`);
+  }
+  return data;
+};
+
 export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
   // Authentication State
   token: authData.token,
@@ -40,8 +56,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      const data = await getJSONResponse(res, 'Login');
 
       localStorage.setItem('notesync_token', data.token);
       localStorage.setItem('notesync_user', JSON.stringify({
@@ -83,8 +98,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Registration failed');
+      const data = await getJSONResponse(res, 'Registration');
 
       localStorage.setItem('notesync_token', data.token);
       localStorage.setItem('notesync_user', JSON.stringify({
@@ -135,13 +149,13 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
   fetchWorkspaceData: async () => {
     if (!get().token) return;
     try {
-      // 1. Fetch videos list (seeding defaults if first load)
+      // 1. Fetch videos list
       const videosRes = await fetch('/api/videos', { headers: getHeaders() });
-      const videosData: VideoItem[] = await videosRes.json();
+      const videosData: VideoItem[] = await getJSONResponse(videosRes, 'Fetch videos');
       
       // 2. Fetch notes
       const notesRes = await fetch('/api/notes', { headers: getHeaders() });
-      const notesData: Note[] = await notesRes.json();
+      const notesData: Note[] = await getJSONResponse(notesRes, 'Fetch notes');
 
       const activeId = videosData[0]?.id || null;
       const activeVid = videosData.find((v) => v.id === activeId) || videosData[0] || null;
@@ -168,7 +182,18 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         screenshots: extractedScreenshots,
       });
     } catch (e) {
-      console.error('Failed to sync remote workspace data:', e);
+      console.error('Failed to sync remote workspace data, falling back to local mock data:', e);
+      // Clean fallback: load initial default mocks so workspace works offline
+      const mockVideos = INITIAL_VIDEOS;
+      const mockNotes = INITIAL_NOTES;
+      const activeId = mockVideos[0]?.id || null;
+      set({
+        videos: mockVideos,
+        notes: mockNotes,
+        activeVideoId: activeId,
+        activeVideo: mockVideos[0] || null,
+        screenshots: [],
+      });
     }
   },
 
@@ -220,8 +245,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         headers: getHeaders(),
         body: JSON.stringify(videoData),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to add video');
+      const data = await getJSONResponse(res, 'Add video');
 
       set((state) => {
         const updatedVideos = [data, ...state.videos];
@@ -287,8 +311,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         headers: getHeaders(),
         body: JSON.stringify(noteData),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to create note');
+      const data = await getJSONResponse(res, 'Create note');
 
       // If note contains screenshot, update local screenshots collection
       if (data.screenshot) {
@@ -320,8 +343,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         headers: getHeaders(),
         body: JSON.stringify(updates),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to update note');
+      const data = await getJSONResponse(res, 'Update note');
 
       set((state) => ({
         notes: state.notes.map((n) => (n.id === id || (n as any)._id === id ? data : n)),
@@ -354,8 +376,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         method: 'PUT',
         headers: getHeaders(),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error('Failed to favorite note');
+      const data = await getJSONResponse(res, 'Favorite note');
 
       set((state) => ({
         notes: state.notes.map((n) => (n.id === id || (n as any)._id === id ? data : n)),
