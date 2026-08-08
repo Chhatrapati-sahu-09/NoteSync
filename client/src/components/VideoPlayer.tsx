@@ -156,9 +156,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Sync seek requests from note card clicks
   useEffect(() => {
     if (seekTime !== undefined && seekTime !== null) {
-      if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+      if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
         ytPlayerRef.current.seekTo(seekTime, true);
-        ytPlayerRef.current.playVideo();
+        if (typeof ytPlayerRef.current.playVideo === 'function') {
+          ytPlayerRef.current.playVideo();
+        }
       } else if (videoRef.current) {
         videoRef.current.currentTime = seekTime;
         videoRef.current.play().catch(() => {});
@@ -171,12 +173,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const togglePlay = () => {
     if (youtubeId && ytPlayerRef.current) {
-      if (isPlaying) {
-        ytPlayerRef.current.pauseVideo();
-      } else {
-        ytPlayerRef.current.playVideo();
+      const playFn = ytPlayerRef.current.playVideo;
+      const pauseFn = ytPlayerRef.current.pauseVideo;
+      if (typeof playFn === 'function' && typeof pauseFn === 'function') {
+        if (isPlaying) {
+          ytPlayerRef.current.pauseVideo();
+        } else {
+          ytPlayerRef.current.playVideo();
+        }
+        setIsPlaying(!isPlaying);
       }
-      setIsPlaying(!isPlaying);
       return;
     }
 
@@ -208,7 +214,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
     setCurrentTime(val);
-    if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+    if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
       ytPlayerRef.current.seekTo(val, true);
     } else if (videoRef.current) {
       videoRef.current.currentTime = val;
@@ -218,9 +224,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
     setVolume(val);
-    if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.setVolume) {
+    if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.setVolume === 'function') {
       ytPlayerRef.current.setVolume(val * 100);
-      ytPlayerRef.current.unMute();
+      if (typeof ytPlayerRef.current.unMute === 'function') {
+        ytPlayerRef.current.unMute();
+      }
       setIsMuted(val === 0);
     } else if (videoRef.current) {
       videoRef.current.volume = val;
@@ -230,11 +238,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const toggleMute = () => {
     if (youtubeId && ytPlayerRef.current) {
+      const muteFn = ytPlayerRef.current.mute;
+      const unmuteFn = ytPlayerRef.current.unMute;
+      const setVolFn = ytPlayerRef.current.setVolume;
       if (isMuted) {
-        ytPlayerRef.current.unMute();
-        ytPlayerRef.current.setVolume(volume * 100);
+        if (typeof unmuteFn === 'function') ytPlayerRef.current.unMute();
+        if (typeof setVolFn === 'function') ytPlayerRef.current.setVolume(volume * 100);
       } else {
-        ytPlayerRef.current.mute();
+        if (typeof muteFn === 'function') ytPlayerRef.current.mute();
       }
       setIsMuted(!isMuted);
       return;
@@ -252,7 +263,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed);
-    if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.setPlaybackRate) {
+    if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.setPlaybackRate === 'function') {
       ytPlayerRef.current.setPlaybackRate(speed);
     } else if (videoRef.current) {
       videoRef.current.playbackRate = speed;
@@ -262,7 +273,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const skipTime = (seconds: number) => {
     const target = Math.max(0, Math.min(duration, currentTime + seconds));
     setCurrentTime(target);
-    if (youtubeId && ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+    if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
       ytPlayerRef.current.seekTo(target, true);
     } else if (videoRef.current) {
       videoRef.current.currentTime = target;
