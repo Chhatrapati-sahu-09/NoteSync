@@ -58,6 +58,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [volume, isMuted, playbackSpeed]);
 
   const youtubeId = activeVideo ? getYoutubeId(activeVideo.url) : null;
+  const isExpiredBlob = activeVideo && activeVideo.url.startsWith('blob:') && !ACTIVE_SESSION_BLOBS.has(activeVideo.url);
 
   // Reset states when active video changes
   useEffect(() => {
@@ -65,10 +66,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-
-    if (activeVideo && activeVideo.url.startsWith('blob:') && !ACTIVE_SESSION_BLOBS.has(activeVideo.url)) {
-      setVideoError('This local video session has expired. Local files are only cached temporarily in your browser session. Please re-upload/select the video file from the sidebar to resume taking notes.');
-    }
   }, [activeVideo]);
 
   // Initialize YouTube Iframe API if YouTube video loaded
@@ -355,12 +352,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     <div id="player-wrapper" className="relative rounded-2xl overflow-hidden bg-black border border-zinc-200 dark:border-zinc-800 shadow-md group transition-all">
       {/* Video Container */}
       <div className="relative aspect-video bg-black flex items-center justify-center">
-        {videoError ? (
+        {videoError || isExpiredBlob ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-950 text-zinc-400 z-10 space-y-3">
             <VideoIcon className="w-10 h-10 stroke-1 text-red-400" />
             <p className="text-xs font-semibold text-zinc-200">Video Loading Failed</p>
             <p className="text-[11px] text-zinc-500 max-w-sm leading-relaxed">
-              {videoError}
+              {videoError || 'This local video session has expired. Local files are only cached temporarily in your browser session. Please re-upload/select the video file from the sidebar to resume taking notes.'}
             </p>
           </div>
         ) : youtubeId ? (
