@@ -19,10 +19,14 @@
 
 ## 🌟 Key Features
 
-### 🎬 Custom HTML5 Video Player & Progress Persistence
-- **Playback Control**: Speed selector (`0.5x`–`2.0x`), 10-second rewind/forward skips, and custom volume bars.
-- **Auto-Sync Playback**: Video playback progress is automatically saved to MongoDB per user, resuming from the exact second upon revisit.
-- **Canvas Screenshot tool**: Instantly snapshot frames from the HTML5 Canvas, base64-upload them to the server, and link them to markdown note cards.
+### 🎬 Custom Video Player (HTML5 & YouTube) & Playback Sync
+- **Hybrid Player Engine**: Seamlessly plays both local/direct video files (MP4/WebM) and YouTube streams.
+- **YouTube API Integration**: Dynamically loads the official YouTube Iframe Player API and binds play/pause, seeks, volume, and playback rates to our custom Notion-styled controls.
+- **Asynchronous Safeguards**: Defensive status checks on all YouTube controller calls prevent client-side script crashes during slow network loading states.
+- **Synchronized Playback**: Video playtime progress auto-saves to MongoDB per user, resuming exactly where you left off.
+- **Canvas Screenshot Captures**: Instantly snapshot frames from HTML5 videos and bind them as visual cards inside markdown notes (bypassed gracefully on YouTube embeds due to browser iframe security restrictions).
+- **Synchronous Session Blob Validation**: Render-phase validation checking prevents browser network connection errors when local file blob URLs expire on page reload.
+- **Database Connection Robustness**: Vite dev-server Bad Gateway (502) error handling and automatic offline local storage cache fallbacks keep the application fully operational even if the database server is offline.
 
 ### 📝 Rich Markdown Notes CRUD
 - **Keyboard Shortcuts**: Pressing <kbd>N</kbd> pauses the video, creates a note card, and focuses the editor.
@@ -92,13 +96,21 @@ All routes (except Auth login/register) require authorization header: `Authoriza
 
 ---
 
-## ✅ Progress & Git Commit Log (Day 2 Complete)
+## ✅ Progress & Git Commit Log
 
-All **12 commit milestones** have been successfully implemented, tested, and validated:
+All commit milestones have been successfully implemented, tested, and validated:
 
 | Commit Hash | Commit Message | Highlights |
 |---|---|---|
-| `e840a1b` | `release: prepare version 1.0.0 portfolio build` | Production client builds, visual optimizations, final cleanup |
+| `ab79c6a` | `fix: resolve react render cycle race condition on expired local blobs` | Synchronous render-phase checks suppress invalid browser local URL loading logs |
+| `f55d3cc` | `fix: safeguard asynchronous youtube API method calls to prevent crash` | Defensive checks verify YT API callbacks exist before triggering player actions |
+| `c2f7164` | `fix: handle Bad Gateway 502 responses and add offline fallbacks` | Added content-type checks and local cache fallbacks when backend is offline |
+| `ace3ff1` | `fix: resolve unused variable, react-hooks dependency, and unused import warnings` | Cleared 15 compiler and linter warnings from frontend source |
+| `ce4d738` | `feat: suppress invalid blob player loading network console errors` | Introduced ACTIVE_SESSION_BLOBS set to track expired blob files |
+| `3fdb982` | `feat: improve video error feedback for expired local blobs` | Detects when page is reloaded and guides user to re-select local videos |
+| `ed98b83` | `feat: add YouTube video playback support` | Fully integrated YouTube Iframe API and unified player control layout |
+| `b9dcde1` | `feat: add crossOrigin and error boundaries to VideoPlayer` | CORS-compliant video tag configuration and custom player error overlays |
+| `3568211` | `release: prepare version 1.0.0 portfolio build` | Production client builds, visual optimizations, final cleanup |
 | `d921b7a` | `docs: write comprehensive README and deployment guide` | Full system architectural mappings and API endpoint references |
 | `c71a39f` | `feat: optimize UI performance and accessibility` | Smooth CSS transitions, dark mode contrast enhancements |
 | `b53f48a` | `feat: build global search across notes` | Multi-field regex indexing on notes database |
