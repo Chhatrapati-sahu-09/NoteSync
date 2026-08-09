@@ -102,11 +102,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         videoId: youtubeId,
         playerVars: {
           autoplay: 0,
-          controls: 0, // hide native controls to use NoteSync custom bar
-          disablekb: 1,
-          fs: 0,
+          controls: 1, // enable native controls for maximum compatibility
+          disablekb: 0,
+          fs: 1,
           modestbranding: 1,
           rel: 0,
+          origin: window.location.origin, // fix cross-origin postMessage errors
         },
         events: {
           onReady: (event: any) => {
@@ -361,11 +362,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </p>
           </div>
         ) : youtubeId ? (
-          /* YouTube Player placeholder div */
+          /* YouTube Player iframe container */
           <div className="w-full h-full relative z-0">
-            <div id="yt-player-element" className="w-full h-full pointer-events-none" />
-            {/* Overlay click catcher to support play/pause clicks on player body */}
-            <div onClick={togglePlay} className="absolute inset-0 bg-transparent cursor-pointer z-10" />
+            <div id="yt-player-element" className="w-full h-full" />
           </div>
         ) : (
           <video
