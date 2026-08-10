@@ -31,6 +31,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   const { activeVideo, addNote, updateNote } = useNoteSyncStore();
 
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const activeVideoRef = useRef(activeVideo);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -48,6 +49,11 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
     { name: 'orange', bg: 'bg-orange-100 dark:bg-orange-950/60 border-orange-300 dark:border-orange-800' },
   ];
 
+  // Sync activeVideo reference
+  useEffect(() => {
+    activeVideoRef.current = activeVideo;
+  }, [activeVideo]);
+
   // Auto focus input when editing existing note or when attached screenshot is received
   useEffect(() => {
     if (editingNote) {
@@ -62,7 +68,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         setTimestamp(activeVideo.currentTime);
       }
     }
-  }, [editingNote, activeVideo]);
+  }, [editingNote, activeVideo?.id]);
 
   // Set screenshot timestamp if attached
   useEffect(() => {
@@ -80,9 +86,10 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
 
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
-        if (activeVideo) {
-          setTimestamp(activeVideo.currentTime);
-          setTitle(`Note at ${formatTime(activeVideo.currentTime)}`);
+        const activeVid = activeVideoRef.current;
+        if (activeVid) {
+          setTimestamp(activeVid.currentTime);
+          setTitle(`Note at ${formatTime(activeVid.currentTime)}`);
           setContent('');
           setTimeout(() => titleInputRef.current?.focus(), 50);
         }
@@ -91,7 +98,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeVideo]);
+  }, []);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);

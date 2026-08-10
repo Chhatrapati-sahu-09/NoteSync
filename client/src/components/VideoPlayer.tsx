@@ -66,7 +66,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-  }, [activeVideo]);
+  }, [activeVideo?.id]);
 
   // Initialize YouTube Iframe API if YouTube video loaded
   useEffect(() => {
@@ -149,7 +149,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ytPlayerRef.current.destroy();
       }
     };
-  }, [activeVideo, youtubeId, updateVideoProgress]);
+  }, [activeVideo?.id, youtubeId, updateVideoProgress]);
 
   // Sync seek requests from note card clicks
   useEffect(() => {
