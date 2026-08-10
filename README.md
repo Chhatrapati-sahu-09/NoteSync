@@ -208,6 +208,16 @@ npm run build
 
 ---
 
+## Demo
+
+<p align="center">
+  <video src="./docs/demo.mp4" controls autoplay loop muted width="100%">
+    Your browser does not support the video tag.
+  </video>
+</p>
+
+---
+
 ## License
 
 Personal Portfolio Project. Open for exploration.
