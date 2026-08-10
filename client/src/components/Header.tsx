@@ -1,4 +1,5 @@
 import React from 'react';
+import logoo from '../assets/logoo.png';
 import {
   Search,
   Moon,
@@ -49,9 +50,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar, onOpenScr
         )}
 
         <div className="flex items-center space-x-2">
-          <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 font-bold text-xs shadow-xs">
-            N
-          </div>
+          <img
+            src={logoo}
+            alt="NoteSync Logo"
+            className="w-7 h-7 rounded-lg object-contain"
+          />
           <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs md:text-sm tracking-tight hidden sm:inline">
             NoteSync
           </span>
