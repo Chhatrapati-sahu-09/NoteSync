@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { NoteSyncState, Note, VideoItem, Screenshot, ThemeMode } from '../types';
-import { INITIAL_VIDEOS, INITIAL_NOTES } from '../data/mockData';
 
 const getInitialAuth = () => {
   try {
@@ -182,18 +181,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         screenshots: extractedScreenshots,
       });
     } catch (e) {
-      console.error('Failed to sync remote workspace data, falling back to local mock data:', e);
-      // Clean fallback: load initial default mocks so workspace works offline
-      const mockVideos = INITIAL_VIDEOS;
-      const mockNotes = INITIAL_NOTES;
-      const activeId = mockVideos[0]?.id || null;
-      set({
-        videos: mockVideos,
-        notes: mockNotes,
-        activeVideoId: activeId,
-        activeVideo: mockVideos[0] || null,
-        screenshots: [],
-      });
+      throw e;
     }
   },
 
@@ -224,8 +212,8 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
           localStorage.setItem('notesync_user', JSON.stringify(updatedUser));
           set({ user: updatedUser });
         }
-      } catch (err) {
-        console.error('Failed to save theme preference remote:', err);
+      } catch {
+        // ignore non-critical theme sync failure
       }
     }
   },
@@ -256,7 +244,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         };
       });
     } catch (e) {
-      console.error(e);
+      throw e;
     }
   },
 
@@ -291,8 +279,8 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
           headers: getHeaders(),
           body: JSON.stringify({ currentTime }),
         });
-      } catch (e) {
-        console.error('Failed to sync progress to database:', e);
+      } catch {
+        // progress sync failure is non-critical
       }
     }
   },
@@ -332,7 +320,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         }));
       }
     } catch (e) {
-      console.error(e);
+      throw e;
     }
   },
 
@@ -349,7 +337,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         notes: state.notes.map((n) => (n.id === id || (n as any)._id === id ? data : n)),
       }));
     } catch (e) {
-      console.error(e);
+      throw e;
     }
   },
 
@@ -366,7 +354,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         screenshots: state.screenshots.filter((s) => s.id !== id && (s as any)._id !== id),
       }));
     } catch (e) {
-      console.error(e);
+      throw e;
     }
   },
 
@@ -382,7 +370,7 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
         notes: state.notes.map((n) => (n.id === id || (n as any)._id === id ? data : n)),
       }));
     } catch (e) {
-      console.error(e);
+      throw e;
     }
   },
 
