@@ -147,42 +147,39 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
 
   fetchWorkspaceData: async () => {
     if (!get().token) return;
-    try {
-      // 1. Fetch videos list
-      const videosRes = await fetch('/api/videos', { headers: getHeaders() });
-      const videosData: VideoItem[] = await getJSONResponse(videosRes, 'Fetch videos');
-      
-      // 2. Fetch notes
-      const notesRes = await fetch('/api/notes', { headers: getHeaders() });
-      const notesData: Note[] = await getJSONResponse(notesRes, 'Fetch notes');
+    
+    // 1. Fetch videos list
+    const videosRes = await fetch('/api/videos', { headers: getHeaders() });
+    const videosData: VideoItem[] = await getJSONResponse(videosRes, 'Fetch videos');
+    
+    // 2. Fetch notes
+    const notesRes = await fetch('/api/notes', { headers: getHeaders() });
+    const notesData: Note[] = await getJSONResponse(notesRes, 'Fetch notes');
 
-      const activeId = videosData[0]?.id || null;
-      const activeVid = videosData.find((v) => v.id === activeId) || videosData[0] || null;
+    const activeId = videosData[0]?.id || null;
+    const activeVid = videosData.find((v) => v.id === activeId) || videosData[0] || null;
 
-      // Extract screenshots already present in notes
-      const extractedScreenshots: Screenshot[] = [];
-      notesData.forEach(n => {
-        if (n.screenshot) {
-          extractedScreenshots.push({
-            id: n.screenshot.id || 'sc-' + Date.now() + Math.random(),
-            timestamp: n.screenshot.timestamp,
-            formattedTime: n.screenshot.formattedTime,
-            dataUrl: n.screenshot.dataUrl,
-            createdAt: n.screenshot.createdAt || new Date().toISOString()
-          });
-        }
-      });
+    // Extract screenshots already present in notes
+    const extractedScreenshots: Screenshot[] = [];
+    notesData.forEach(n => {
+      if (n.screenshot) {
+        extractedScreenshots.push({
+          id: n.screenshot.id || 'sc-' + Date.now() + Math.random(),
+          timestamp: n.screenshot.timestamp,
+          formattedTime: n.screenshot.formattedTime,
+          dataUrl: n.screenshot.dataUrl,
+          createdAt: n.screenshot.createdAt || new Date().toISOString()
+        });
+      }
+    });
 
-      set({
-        videos: videosData,
-        notes: notesData,
-        activeVideoId: activeId,
-        activeVideo: activeVid,
-        screenshots: extractedScreenshots,
-      });
-    } catch (e) {
-      throw e;
-    }
+    set({
+      videos: videosData,
+      notes: notesData,
+      activeVideoId: activeId,
+      activeVideo: activeVid,
+      screenshots: extractedScreenshots,
+    });
   },
 
   // UI Themes
@@ -224,28 +221,24 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
   activeVideo: null,
 
   addVideo: async (videoData) => {
-    try {
-      if (videoData.url.startsWith('blob:')) {
-        ACTIVE_SESSION_BLOBS.add(videoData.url);
-      }
-      const res = await fetch('/api/videos', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(videoData),
-      });
-      const data = await getJSONResponse(res, 'Add video');
-
-      set((state) => {
-        const updatedVideos = [data, ...state.videos];
-        return {
-          videos: updatedVideos,
-          activeVideoId: data.id,
-          activeVideo: data,
-        };
-      });
-    } catch (e) {
-      throw e;
+    if (videoData.url.startsWith('blob:')) {
+      ACTIVE_SESSION_BLOBS.add(videoData.url);
     }
+    const res = await fetch('/api/videos', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(videoData),
+    });
+    const data = await getJSONResponse(res, 'Add video');
+
+    set((state) => {
+      const updatedVideos = [data, ...state.videos];
+      return {
+        videos: updatedVideos,
+        activeVideoId: data.id,
+        activeVideo: data,
+      };
+    });
   },
 
   setActiveVideo: (id: string) => {
@@ -293,85 +286,69 @@ export const useNoteSyncStore = create<NoteSyncState>((set, get) => ({
   setSelectedCategory: (category: string) => set({ selectedCategory: category }),
 
   addNote: async (noteData) => {
-    try {
-      const res = await fetch('/api/notes', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(noteData),
-      });
-      const data = await getJSONResponse(res, 'Create note');
+    const res = await fetch('/api/notes', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(noteData),
+    });
+    const data = await getJSONResponse(res, 'Create note');
 
-      // If note contains screenshot, update local screenshots collection
-      if (data.screenshot) {
-        const newSc: Screenshot = {
-          id: data.screenshot._id || 'sc-' + Date.now(),
-          timestamp: data.screenshot.timestamp,
-          formattedTime: data.screenshot.formattedTime,
-          dataUrl: data.screenshot.dataUrl,
-          createdAt: data.screenshot.createdAt || new Date().toISOString(),
-        };
-        set((state) => ({
-          notes: [data, ...state.notes],
-          screenshots: [newSc, ...state.screenshots],
-        }));
-      } else {
-        set((state) => ({
-          notes: [data, ...state.notes],
-        }));
-      }
-    } catch (e) {
-      throw e;
+    // If note contains screenshot, update local screenshots collection
+    if (data.screenshot) {
+      const newSc: Screenshot = {
+        id: data.screenshot._id || 'sc-' + Date.now(),
+        timestamp: data.screenshot.timestamp,
+        formattedTime: data.screenshot.formattedTime,
+        dataUrl: data.screenshot.dataUrl,
+        createdAt: data.screenshot.createdAt || new Date().toISOString(),
+      };
+      set((state) => ({
+        notes: [data, ...state.notes],
+        screenshots: [newSc, ...state.screenshots],
+      }));
+    } else {
+      set((state) => ({
+        notes: [data, ...state.notes],
+      }));
     }
   },
 
   updateNote: async (id, updates) => {
-    try {
-      const res = await fetch(`/api/notes/${id}`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify(updates),
-      });
-      const data = await getJSONResponse(res, 'Update note');
+    const res = await fetch(`/api/notes/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(updates),
+    });
+    const data = await getJSONResponse(res, 'Update note');
 
-      set((state) => ({
-        notes: state.notes.map((n) => (n.id === id || (n as any)._id === id ? data : n)),
-      }));
-    } catch (e) {
-      throw e;
-    }
+    set((state) => ({
+      notes: state.notes.map((n) => (n.id === id || (n as any)._id === id ? data : n)),
+    }));
   },
 
   deleteNote: async (id) => {
-    try {
-      const res = await fetch(`/api/notes/${id}`, {
-        method: 'DELETE',
-        headers: getHeaders(),
-      });
-      if (!res.ok) throw new Error('Failed to delete note');
+    const res = await fetch(`/api/notes/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete note');
 
-      set((state) => ({
-        notes: state.notes.filter((n) => n.id !== id && (n as any)._id !== id),
-        screenshots: state.screenshots.filter((s) => s.id !== id && (s as any)._id !== id),
-      }));
-    } catch (e) {
-      throw e;
-    }
+    set((state) => ({
+      notes: state.notes.filter((n) => n.id !== id && (n as any)._id !== id),
+      screenshots: state.screenshots.filter((s) => s.id !== id && (s as any)._id !== id),
+    }));
   },
 
   toggleFavoriteNote: async (id) => {
-    try {
-      const res = await fetch(`/api/notes/${id}/favorite`, {
-        method: 'PUT',
-        headers: getHeaders(),
-      });
-      const data = await getJSONResponse(res, 'Favorite note');
+    const res = await fetch(`/api/notes/${id}/favorite`, {
+      method: 'PUT',
+      headers: getHeaders(),
+    });
+    const data = await getJSONResponse(res, 'Favorite note');
 
-      set((state) => ({
-        notes: state.notes.map((n) => (n.id === id || (n as any)._id === id ? data : n)),
-      }));
-    } catch (e) {
-      throw e;
-    }
+    set((state) => ({
+      notes: state.notes.map((n) => (n.id === id || (n as any)._id === id ? data : n)),
+    }));
   },
 
   screenshots: [],
