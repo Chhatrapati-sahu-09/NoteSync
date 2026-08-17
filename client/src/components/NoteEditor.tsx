@@ -68,7 +68,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         setTimestamp(activeVideo.currentTime);
       }
     }
-  }, [editingNote, activeVideo?.id]);
+  }, [editingNote, activeVideo, activeVideo?.id, activeVideo?.currentTime]);
 
   // Set screenshot timestamp if attached
   useEffect(() => {

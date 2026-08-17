@@ -149,7 +149,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ytPlayerRef.current.destroy();
       }
     };
-  }, [activeVideo?.id, youtubeId, updateVideoProgress]);
+  }, [activeVideo, activeVideo?.id, youtubeId, updateVideoProgress]);
 
   // Sync seek requests from note card clicks
   useEffect(() => {
@@ -188,7 +188,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (isPlaying) {
       videoRef.current.pause();
     } else {
-      videoRef.current.play().catch((err) => console.log('Playback interrupted', err));
+      videoRef.current.play().catch(() => {
+        // ignore playback interrupted error
+      });
     }
     setIsPlaying(!isPlaying);
   };
