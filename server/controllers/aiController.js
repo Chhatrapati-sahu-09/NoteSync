@@ -52,64 +52,7 @@ const callGemini = async (prompt, mimeType = 'text/plain') => {
   }
 };
 
-// Generates local mock summary from note items
-const generateMockSummary = (notes, videoTitle) => {
-  if (!notes || notes.length === 0) {
-    return `### NoteSync AI Executive Summary\n\nNo lecture notes have been captured for this video yet. Please add notes with timestamps to generate an AI summary.`;
-  }
 
-  const bulletPoints = notes.map(n => `* **[${n.formattedTime}] ${n.title}:** ${n.content.substring(0, 100)}${n.content.length > 100 ? '...' : ''}`).join('\n');
-  const actionItems = notes
-    .filter(n => n.category === 'Code Snippet' || n.category === 'Question')
-    .map(n => `* [ ] Review code pattern: "${n.title}" at timestamp ${n.formattedTime}`)
-    .join('\n') || '* [ ] Review key concepts and timestamps recorded in this lecture.';
-
-  return `### NoteSync AI Executive Summary\n\n**Video:** ${videoTitle}\n\n#### 📌 Key Takeaways & Core Concepts\n${bulletPoints}\n\n#### ✅ Action Items & Follow-ups\n${actionItems}\n\n*(Note: Running in local heuristic mode. Set GEMINI_API_KEY in server/.env for advanced AI generation)*`;
-};
-
-// Generates local mock flashcards from note items
-const generateMockFlashcards = (notes) => {
-  if (!notes || notes.length === 0) {
-    return [
-      {
-        id: 'fc-1',
-        question: 'What is NoteSync?',
-        answer: 'NoteSync is a Notion-inspired workspace for synchronized video note-taking, featuring canvas screenshots and AI generation.',
-        category: 'NoteSync Basics'
-      },
-      {
-        id: 'fc-2',
-        question: 'How do you create a quick timestamped note in NoteSync?',
-        answer: 'Pressing the "N" keyboard shortcut immediately grabs the current video timestamp, opens a new note card, and focuses the title input.',
-        category: 'Keyboard Shortcuts'
-      }
-    ];
-  }
-
-  const cards = notes.map((n, idx) => ({
-    id: `fc-${Date.now()}-${idx}`,
-    question: `What is the core concept behind "${n.title}" discussed at ${n.formattedTime}?`,
-    answer: n.content || 'Refer to the timestamped note for full details.',
-    category: n.category || 'General'
-  }));
-
-  // Ensure we have at least 2 cards
-  if (cards.length < 2) {
-    cards.push({
-      id: `fc-default`,
-      question: 'How do you navigate to a specific timestamp in the video?',
-      answer: 'By clicking the timestamp badge or the screenshot thumbnail in any note card.',
-      category: 'Navigation'
-    });
-  }
-
-  return cards;
-};
-
-// Generates local concept explanation
-const generateMockExplanation = (concept) => {
-  return `### 💡 NoteSync Concept Explainer: "${concept}"\n\nHere is a simple, plain-English breakdown of this topic:\n\n1. **Core Idea:** Every concept can be simplified. When you study this, think of it as a modular block in a system.\n2. **Practical Analogy:** Imagine putting pieces of a puzzle together. Each component has a specific shape and matches only with its target counterpart.\n3. **Key Takeaway:** Focus on how this integrates with the rest of the workspace.\n\n*(Note: Running in local heuristic mode. Set GEMINI_API_KEY in server/.env for advanced AI explanations)*`;
-};
 
 exports.getSummary = async (req, res) => {
   const { notes, videoTitle } = req.body;
@@ -120,9 +63,7 @@ exports.getSummary = async (req, res) => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    // Graceful local fallback
-    const summary = generateMockSummary(notes, videoTitle || 'Active Video');
-    return res.json({ summary });
+    return res.status(500).json({ message: 'GEMINI_API_KEY is not configured' });
   }
 
   try {
@@ -140,9 +81,8 @@ exports.getSummary = async (req, res) => {
     const summary = await callGemini(prompt);
     res.json({ summary });
   } catch (error) {
-    console.error('AI Summary generation failed, falling back:', error);
-    const summary = generateMockSummary(notes, videoTitle || 'Active Video');
-    res.json({ summary, fallback: true });
+    console.error('AI Summary generation failed:', error);
+    res.status(500).json({ message: 'AI Summary generation failed' });
   }
 };
 
@@ -150,13 +90,12 @@ exports.getFlashcards = async (req, res) => {
   const { notes } = req.body;
 
   if (!notes || notes.length === 0) {
-    return res.json({ flashcards: generateMockFlashcards(notes) });
+    return res.status(400).json({ message: 'No notes provided' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    // Graceful local fallback
-    return res.json({ flashcards: generateMockFlashcards(notes) });
+    return res.status(500).json({ message: 'GEMINI_API_KEY is not configured' });
   }
 
   try {
@@ -190,8 +129,8 @@ exports.getFlashcards = async (req, res) => {
 
     res.json({ flashcards });
   } catch (error) {
-    console.error('AI Flashcard generation failed, falling back:', error);
-    res.json({ flashcards: generateMockFlashcards(notes), fallback: true });
+    console.error('AI Flashcard generation failed:', error);
+    res.status(500).json({ message: 'AI Flashcard generation failed' });
   }
 };
 
@@ -204,9 +143,7 @@ exports.explainConcept = async (req, res) => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    // Graceful local fallback
-    const explanation = generateMockExplanation(concept);
-    return res.json({ explanation });
+    return res.status(500).json({ message: 'GEMINI_API_KEY is not configured' });
   }
 
   try {
@@ -217,8 +154,7 @@ exports.explainConcept = async (req, res) => {
     const explanation = await callGemini(prompt);
     res.json({ explanation });
   } catch (error) {
-    console.error('AI Concept explanation failed, falling back:', error);
-    const explanation = generateMockExplanation(concept);
-    res.json({ explanation, fallback: true });
+    console.error('AI Concept explanation failed:', error);
+    res.status(500).json({ message: 'AI Concept explanation failed' });
   }
 };
